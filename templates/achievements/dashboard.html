@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+    <h1>Welcome, {{ user.first_name|default:user.username }}</h1>
+    <p>Your SocCoins: <b>{{ user.soc_coins }}</b></p>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>Your Progress</h3>
+        <p><b>Total Points:</b> {{ total_points }}</p>
+        <p><b>Social GPA:</b> {{ social_gpa }}</p>
+        <div class="progress-track">
+            <div class="progress-fill" style="width: {{ progress_percent }}%;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>AI Recommendations</h3>
+        {% if recommendations %}
+            <ul>
+                {% for r in recommendations %}
+                    <li>{{ r }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">Upload achievements to get personalized growth hints.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h3>Recent Achievements</h3>
+    {% if achievements %}
+        <ul class="ach-list">
+            {% for a in achievements %}
+            <li>
+                <b>{{ a.title }}</b>
+                ({{ a.get_category_display }} | {{ a.get_scale_display }} | {{ a.get_role_type_display }})
+                — {{ a.total_points }} pts
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="muted">No achievements yet. Click “Add Achievement” to start.</p>
+    {% endif %}
+</div>
+{% endblock %}

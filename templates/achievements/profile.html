@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>{{ profile_user.get_full_name|default:profile_user.username }}</h2>
+    <p><b>School:</b> {{ profile_user.school_name }}</p>
+    <p><b>SocCoins:</b> {{ profile_user.soc_coins }}</p>
+    <p><b>Total Points:</b> {{ total_points }}</p>
+    <p><b>Social GPA:</b> {{ social_gpa }}</p>
+</div>
+
+<div class="card">
+    <h3>Progress Track</h3>
+    <p class="muted">Scroll horizontally to see future milestones.</p>
+    <div class="track">
+        {% for m in milestones %}
+            <div class="track-step {% if total_points >= m.threshold %}track-step-active{% endif %}">
+                <div class="track-dot"></div>
+                <div class="track-label">
+                    <div class="track-points">{{ m.threshold }} pts</div>
+                    <div class="track-reward">{{ m.reward }}</div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h3>Achievements</h3>
+    <ul class="ach-list">
+        {% for a in achievements %}
+        <li>{{ a.title }} — {{ a.total_points }} pts ({{ a.get_category_display }}, {{ a.get_scale_display }})</li>
+        {% empty %}
+        <li class="muted">No achievements yet.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
+

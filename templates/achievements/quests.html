@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+    <h1>Quests</h1>
+    <p>Complete challenges to earn extra SocCoins.</p>
+</div>
+
+{% if message %}
+<div class="alert success">{{ message }}</div>
+{% endif %}
+
+<div class="grid">
+    {% for q in quests %}
+    <div class="card quest-card">
+        <h3>{{ q.title }}</h3>
+        <p class="muted">{{ q.description }}</p>
+        <p><b>Reward:</b> +{{ q.reward_coins }} SocCoins</p>
+
+        {% if q.id in completed_ids %}
+            <button class="btn btn-disabled" disabled>Completed</button>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="quest_id" value="{{ q.id }}">
+                <button class="btn" type="submit">Mark as completed</button>
+            </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

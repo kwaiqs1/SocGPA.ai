@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Shop</h2>
+    <p>Your SocCoins: <b>{{ user.soc_coins }}</b></p>
+    {% if message %}<p class="msg-ok">{{ message }}</p>{% endif %}
+    {% if error %}<p class="msg-error">{{ error }}</p>{% endif %}
+</div>
+
+<div class="grid">
+    {% for item in items %}
+    <div class="card">
+        <h3>{{ item.name }}</h3>
+        <p><b>Provider:</b> {{ item.provider }}</p>
+        <p>{{ item.description }}</p>
+        <p><b>Price:</b> {{ item.price }} SocCoins</p>
+        <p><b>Reward:</b> {{ item.discount_info }}</p>
+        {% if item.id in purchases %}
+            <button class="btn" disabled>Purchased</button>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+                <button class="btn" type="submit">Buy</button>
+            </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

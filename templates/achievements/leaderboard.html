@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Leaderboard</h2>
+    <table class="table">
+        <tr>
+            <th>#</th>
+            <th>Student</th>
+            <th>School</th>
+            <th>Points</th>
+            <th>SocCoins</th>
+        </tr>
+        {% for u in users %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><a href="{% url 'profile' u.id %}">{{ u.get_full_name|default:u.username }}</a></td>
+            <td>{{ u.school_name }}</td>
+            <td>{{ u.total_points|default:0 }}</td>
+            <td>{{ u.soc_coins }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

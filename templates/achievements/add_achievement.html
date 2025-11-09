@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Add Achievement</h2>
+    <p>Upload your certificate/proof. AI will read it, classify into tracks, assign points & SocCoins, and give smart feedback.</p>
+
+    <form method="post" enctype="multipart/form-data" id="achievement-form">
+        {% csrf_token %}
+
+        <!-- Title -->
+        <div class="form-row">
+            {{ form.title.label_tag }} {{ form.title }}
+        </div>
+
+        <!-- Main category -->
+        <div class="form-row">
+            {{ form.category.label_tag }} {{ form.category }}
+        </div>
+
+        <!-- Subcategory (мы делаем свой select, вместо текстового) -->
+        <div class="form-row" id="subcategory-wrapper">
+            <label for="id_subcategory">Subcategory</label>
+            <select name="subcategory" id="id_subcategory"></select>
+        </div>
+
+        <!-- File -->
+        <div class="form-row">
+            {{ form.proof_file.label_tag }} {{ form.proof_file }}
+        </div>
+
+        <!-- Description: только для "Other" -->
+        <div class="form-row" id="description-wrapper">
+            {{ form.description.label_tag }} {{ form.description }}
+            <small>Only required if you choose "Other".</small>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="form-errors">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <button class="btn" type="submit">Analyze with SocGPA.AI</button>
+    </form>
+</div>
+
+<script>
+const categorySelect = document.getElementById("id_category");
+const subWrapper = document.getElementById("subcategory-wrapper");
+const subSelect = document.getElementById("id_subcategory");
+const descWrapper = document.getElementById("description-wrapper");
+
+// Список подкатегорий для каждой из 5 основных категорий
+const subcategories = {
+    "research": [
+        "Olympiads & scientific competitions",
+        "Hackathons / case-championships",
+        "Science clubs / conferences",
+        "Research projects / publications"
+    ],
+    "social": [
+        "Volunteering projects",
+        "Charity / fundraising",
+        "Student government / peer support",
+        "Community initiatives"
+    ],
+    "creative": [
+        "Art / design / exhibitions",
+        "Music / performance / theatre",
+        "Debate / MUN / public speaking",
+        "Media / content / journalism"
+    ],
+    "sports": [
+        "School sport teams",
+        "Regional / national competitions",
+        "Martial arts / individual sports",
+        "Chess / mind sports"
+    ],
+    "competence": [
+        "Leadership roles",
+        "Mentoring / tutoring",
+        "Team projects",
+        "Soft skills / trainings"
+    ]
+};
+
+function updateUI() {
+    if (!categorySelect) return;
+    const cat = categorySelect.value;
+
+    // Описание показываем только для "other"
+    if (cat === "other") {
+        descWrapper.style.display = "block";
+    } else {
+        descWrapper.style.display = "none";
+        const d = document.getElementById("id_description");
+        if (d) d.value = "";
+    }
+
+    // Рендерим подкатегории
+    if (subcategories[cat]) {
+        subWrapper.style.display = "block";
+        subSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select subcategory";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        subSelect.appendChild(placeholder);
+
+        subcategories[cat].forEach(label => {
+            const opt = document.createElement("option");
+            opt.value = label;
+            opt.textContent = label;
+            subSelect.appendChild(opt);
+        });
+
+        subSelect.disabled = false;
+    } else if (cat === "other") {
+        // для Other скрываем селект
+        subWrapper.style.display = "none";
+        subSelect.innerHTML = "";
+        subSelect.disabled = true;
+    } else {
+        // защита от странных значений
+        subWrapper.style.display = "none";
+        subSelect.innerHTML = "";
+        subSelect.disabled = true;
+    }
+}
+
+// Инициализация при загрузке
+updateUI();
+
+// Смена категории
+if (categorySelect) {
+    categorySelect.addEventListener("change", updateUI);
+}
+</script>
+{% endblock %}
+

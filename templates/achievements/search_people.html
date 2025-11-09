@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Search People</h2>
+    <form method="get" class="search-form">
+        <input type="text" name="q" placeholder="Enter name or username" value="{{ query }}">
+        <button class="btn" type="submit">Search</button>
+    </form>
+</div>
+
+<div class="card">
+    {% if query %}
+        <h3>Results for "{{ query }}"</h3>
+        {% if results %}
+            <ul class="ach-list">
+                {% for u in results %}
+                <li>
+                    <a href="{% url 'profile' u.id %}">
+                        {{ u.get_full_name|default:u.username }} — {{ u.school_name }}
+                        (SocCoins: {{ u.soc_coins }})
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No users found.</p>
+        {% endif %}
+    {% else %}
+        <p>Type a name to find students.</p>
+    {% endif %}
+</div>
+{% endblock %}

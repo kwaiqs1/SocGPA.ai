@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Upcoming Extracurriculars</h2>
+    <p>Discover competitions, hackathons, and volunteering opportunities.</p>
+</div>
+
+<div class="grid">
+    {% for e in events %}
+    <div class="card">
+        <h3>{{ e.title }}</h3>
+        <p><b>Organizer:</b> {{ e.organizer }}</p>
+        <p><b>Category:</b> {{ e.category }}</p>
+        <p><b>Date:</b> {{ e.date }}</p>
+        <p><b>Location:</b> {{ e.location }}</p>
+        {% if e.link %}
+            <p><a href="{{ e.link }}" class="link" target="_blank">More details</a></p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

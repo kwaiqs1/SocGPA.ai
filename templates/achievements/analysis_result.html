@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="page-hero">
+    <div>
+        <h1>SocGPA.AI Evaluation</h1>
+        <p>Here is how your achievement contributes to your Social GPA and profile balance.</p>
+    </div>
+</div>
+
+<div class="card card-glass card-animate result-head">
+    <div class="result-title">
+        <div class="result-label">Achievement</div>
+        <div class="result-name">{{ achievement.title }}</div>
+    </div>
+    <div class="result-chip-wrap">
+        <div class="result-chip">
+            +{{ coins_earned }} SocCoins
+        </div>
+        <div class="result-chip">
+            AI score: {{ ai_result.total_score }}
+        </div>
+        <div class="result-chip">
+            Internal pts: {{ achievement.total_points }}
+        </div>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card card-glass card-animate">
+        <h3>Classification</h3>
+        <div class="kv">
+            <span>Category</span>
+            <strong>{{ ai_result.category }}</strong>
+        </div>
+        <div class="kv">
+            <span>Scale</span>
+            <strong>{{ ai_result.scale }}</strong>
+        </div>
+        <div class="kv">
+            <span>Role</span>
+            <strong>{{ ai_result.role_type }}</strong>
+        </div>
+        <div class="kv">
+            <span>Duration</span>
+            <strong>{{ ai_result.duration_months }} months</strong>
+        </div>
+    </div>
+
+    <div class="card card-glass card-animate">
+        <h3>Score breakdown</h3>
+        {% if ai_result.scores %}
+        <ul class="score-list">
+            <li>
+                <span>Category impact</span>
+                <b>{{ ai_result.scores.category }}</b>
+            </li>
+            <li>
+                <span>Scale</span>
+                <b>{{ ai_result.scores.scale }}</b>
+            </li>
+            <li>
+                <span>Role</span>
+                <b>{{ ai_result.scores.role }}</b>
+            </li>
+            <li>
+                <span>Duration</span>
+                <b>{{ ai_result.scores.duration }}</b>
+            </li>
+        </ul>
+        {% endif %}
+        <div class="score-total">
+            <span>Total AI score</span>
+            <b>{{ ai_result.total_score }}</b>
+        </div>
+    </div>
+</div>
+
+<div class="card card-glass card-animate">
+    <h3>Feedback</h3>
+    <p class="muted">{{ ai_result.feedback }}</p>
+
+    {% if ai_result.missing_recommendations %}
+    <h4>Personalized next steps</h4>
+    <ul class="rec-list">
+        {% for r in ai_result.missing_recommendations %}
+        <li>{{ r }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+<div class="card card-inline-actions">
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Home</a>
+    <a href="{% url 'add_achievement' %}" class="btn btn-primary">Add another</a>
+</div>
+
+{% endblock %}
+
