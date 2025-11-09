@@ -2,12 +2,16 @@ import os
 import base64
 import json
 import requests
+from requests.exceptions import RequestException, Timeout, HTTPError
 
 AI_PROVIDER = os.environ.get("AI_PROVIDER", "OPENROUTER").upper()
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL = "z-ai/glm-4.5-air:free"
+
+# Сколько максимум ждём ответ от OpenRouter (должно быть МЕНЬШЕ gunicorn timeout)
+OPENROUTER_TIMEOUT = 40
 
 
 def encode_file_to_base64(file_path):
@@ -17,7 +21,7 @@ def encode_file_to_base64(file_path):
         return base64.b64encode(f.read()).decode("utf-8")
 
 
-
+# ---------- Рекомендации по “дырам” в профиле ----------
 
 def build_gap_recommendations(main_category, profile_summary):
     core_cats = ['research', 'social', 'creative', 'sports', 'competence']
@@ -28,7 +32,6 @@ def build_gap_recommendations(main_category, profile_summary):
         for c, n in by_cat.items():
             if c in counts:
                 counts[c] += n
-
 
     if main_category in counts:
         counts[main_category] += 1
@@ -47,17 +50,20 @@ def build_gap_recommendations(main_category, profile_summary):
     if 'competence' in missing:
         recs.append("Add leadership/mentoring or teamwork experiences to highlight key competencies.")
 
-
     if not recs:
-        recs.append("You already have a well-balanced profile. Focus on deeper, longer-term projects and leadership roles.")
+        recs.append(
+            "You already have a well-balanced profile. Focus on deeper, longer-term projects and leadership roles."
+        )
 
     return recs[:3]
 
 
+# ---------- Локальный fallback-анализ ----------
+
 def local_fallback_analysis(user_full_name, title, category_hint, description, profile_summary=None):
     text = f"{title} {description}".lower()
 
-
+    # Определяем основную категорию
     if category_hint and category_hint != 'other':
         category = category_hint
     else:
@@ -74,7 +80,7 @@ def local_fallback_analysis(user_full_name, title, category_hint, description, p
         else:
             category = "other"
 
-
+    # Масштаб
     if any(w in text for w in ["international", "междунар", "world", "global"]):
         scale = "international"
     elif any(w in text for w in ["national", "республикан", "country-wide"]):
@@ -84,7 +90,7 @@ def local_fallback_analysis(user_full_name, title, category_hint, description, p
     else:
         scale = "school"
 
-
+    # Роль
     if any(w in text for w in ["founder", "co-founder", "president", "captain", "chair", "leader"]):
         role_type = "leader"
     elif any(w in text for w in ["organizer", "organized", "организатор"]):
@@ -94,7 +100,7 @@ def local_fallback_analysis(user_full_name, title, category_hint, description, p
     else:
         role_type = "participant"
 
-
+    # Длительность (очень грубо)
     duration_months = 1
     if any(w in text for w in ["6 months", "6 месяцев", "полгода"]):
         duration_months = 6
@@ -125,10 +131,11 @@ def local_fallback_analysis(user_full_name, title, category_hint, description, p
         "total_score": total_score,
         "feedback": feedback,
         "missing_recommendations": recs,
+        "provider": "local_fallback",
     }
 
 
-
+# ---------- Вызов OpenRouter с аккуратной обработкой ----------
 
 def call_openrouter_analyzer(user_full_name, title, category_hint, description, file_b64, profile_summary):
     if not OPENROUTER_API_KEY:
@@ -159,8 +166,7 @@ def call_openrouter_analyzer(user_full_name, title, category_hint, description, 
         "4) feedback: 1-3 sentences describing the achievement.\n"
         "5) missing_recommendations: 1-3 suggestions based on profile_summary GAPS:\n"
         "   - Recommend tracks where the student has 0 or few achievements.\n"
-        "   - Do NOT repeat generic tips. Be specific: e.g. 'Try volunteering projects', "
-        "     'Add creative / debate results', 'Develop leadership roles', etc.\n\n"
+        "   - Do NOT repeat generic tips. Be specific.\n\n"
         "Return ONLY one strict JSON object with keys:\n"
         "{category, scale, role_type, duration_months, scores, total_score, feedback, missing_recommendations}."
     )
@@ -202,10 +208,27 @@ def call_openrouter_analyzer(user_full_name, title, category_hint, description, 
         "X-Title": "SocGPA.AI Hackathon Demo",
     }
 
-    resp = requests.post(OPENROUTER_URL, headers=headers, json=data, timeout=40)
-    resp.raise_for_status()
-    content = resp.json()["choices"][0]["message"]["content"]
-    result = json.loads(content)
+    # Тут важный момент: если OpenRouter тупит/отказывает -> бросаем исключение,
+    # которое выше перехватится и включит local_fallback.
+    try:
+        resp = requests.post(
+            OPENROUTER_URL,
+            headers=headers,
+            json=data,
+            timeout=OPENROUTER_TIMEOUT,
+        )
+        # 4xx/5xx -> тоже пускаем в fallback
+        resp.raise_for_status()
+    except (Timeout, HTTPError, RequestException) as e:
+        print("AI error (OpenRouter request failed), will use fallback:", repr(e))
+        raise
+
+    try:
+        content = resp.json()["choices"][0]["message"]["content"]
+        result = json.loads(content)
+    except Exception as e:
+        print("AI error (OpenRouter invalid JSON), will use fallback:", repr(e))
+        raise
 
     defaults = {
         "category": "other",
@@ -225,9 +248,11 @@ def call_openrouter_analyzer(user_full_name, title, category_hint, description, 
     for k, v in defaults.items():
         result.setdefault(k, v)
 
+    result["provider"] = "openrouter"
     return result
 
 
+# ---------- Главная точка входа ----------
 
 def analyze_achievement_with_ai(
     user_full_name,
@@ -240,7 +265,8 @@ def analyze_achievement_with_ai(
     file_b64 = encode_file_to_base64(file_path) if file_path else None
     desc = description or ""
 
-    if AI_PROVIDER == "OPENROUTER" and OPENROUTER_API_KEY and file_b64:
+    # Пробуем OpenRouter, если включен и есть ключ
+    if AI_PROVIDER == "OPENROUTER" and OPENROUTER_API_KEY:
         try:
             return call_openrouter_analyzer(
                 user_full_name,
@@ -251,8 +277,11 @@ def analyze_achievement_with_ai(
                 profile_summary,
             )
         except Exception as e:
+            # Любая ошибка OpenRouter -> живём на локальном анализе,
+            # без падения сервера.
             print("AI error (OpenRouter), using local fallback:", repr(e))
 
+    # Надёжный локальный разбор
     return local_fallback_analysis(
         user_full_name,
         title,
@@ -260,3 +289,4 @@ def analyze_achievement_with_ai(
         desc,
         profile_summary,
     )
+
