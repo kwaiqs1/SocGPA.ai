@@ -3,64 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <title>SocGPA.AI</title>
-    <link rel="stylesheet" href="/static/style.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 <div class="layout">
-    <!-- LEFT SIDEBAR -->
     <aside class="sidebar">
-        <div class="logo-wrap">
-            <div class="logo">SocGPA.AI</div>
-            <div class="logo-sub">Social GPA tracker</div>
-        </div>
+        <div class="logo">SocGPA.AI</div>
 
         {% if user.is_authenticated %}
         <nav class="side-nav">
-            <a href="{% url 'dashboard' %}" class="side-link">
-                <span class="side-dot"></span> Home
-            </a>
-            <a href="{% url 'shop' %}" class="side-link">
-                <span class="side-dot"></span> Shop
-            </a>
-            <a href="{% url 'leaderboard' %}" class="side-link">
-                <span class="side-dot"></span> Leaderboard
-            </a>
-            <a href="{% url 'search_people' %}" class="side-link">
-                <span class="side-dot"></span> Search People
-            </a>
-            <a href="{% url 'extracurriculars' %}" class="side-link">
-                <span class="side-dot"></span> Extracurriculars
-            </a>
-            <a href="{% url 'quests' %}" class="side-link">
-                <span class="side-dot"></span> Quests
-            </a>
+            <a href="{% url 'dashboard' %}" class="side-link">Home</a>
+            <a href="{% url 'shop' %}" class="side-link">Shop</a>
+            <a href="{% url 'leaderboard' %}" class="side-link">Leaderboard</a>
+            <a href="{% url 'search_people' %}" class="side-link">Search People</a>
+            <a href="{% url 'extracurriculars' %}" class="side-link">Extracurriculars</a>
+            <a href="{% url 'quests' %}" class="side-link">Quests</a>
         </nav>
 
         <a href="{% url 'logout' %}" class="side-link side-logout">Sign out</a>
         {% else %}
         <nav class="side-nav">
-            <a href="{% url 'login' %}" class="side-link">
-                <span class="side-dot"></span> Login
-            </a>
-            <a href="{% url 'register' %}" class="side-link">
-                <span class="side-dot"></span> Sign up
-            </a>
+            <a href="{% url 'login' %}" class="side-link">Login</a>
+            <a href="{% url 'register' %}" class="side-link">Sign up</a>
         </nav>
         {% endif %}
     </aside>
 
-    <!-- MAIN AREA -->
     <main class="main">
         {% if user.is_authenticated %}
         <header class="topbar">
-            <div class="topbar-glow"></div>
+            <div></div>
             <a href="{% url 'my_profile' %}" class="profile-pill">
                 <div class="profile-name">
                     {{ user.get_full_name|default:user.username }}
                 </div>
-                <div class="profile-stats">
-                    SocCoins: {{ user.soc_coins }}
-                </div>
+                <div class="profile-stats">SocCoins: {{ user.soc_coins }}</div>
             </a>
         </header>
         {% endif %}
@@ -70,13 +49,9 @@
         </section>
 
         {% if user.is_authenticated %}
-        <a href="{% url 'add_achievement' %}" class="fab-add">
-            <span class="fab-icon">+</span>
-            <span class="fab-label">Add Achievement</span>
-        </a>
+        <a href="{% url 'add_achievement' %}" class="fab-add">+ Add Achievement</a>
         {% endif %}
     </main>
 </div>
 </body>
 </html>
-
